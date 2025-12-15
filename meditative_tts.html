@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meditative Questions - TTS Player</title>
+    <style>
+        body {
+            font-family: 'Georgia', serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            line-height: 1.6;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #f0a500;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            font-style: italic;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .play-btn {
+            background: #f0a500;
+            color: #1a1a2e;
+        }
+        .play-btn:hover {
+            background: #ffb520;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(240, 165, 0, 0.4);
+        }
+        .pause-btn {
+            background: #e94560;
+            color: white;
+        }
+        .pause-btn:hover {
+            background: #ff5577;
+        }
+        .stop-btn {
+            background: #533483;
+            color: white;
+        }
+        .stop-btn:hover {
+            background: #6644aa;
+        }
+        select {
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e8e8e8;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 200px;
+        }
+        .slider-container {
+            margin: 20px 0;
+        }
+        .slider-container label {
+            display: block;
+            margin-bottom: 8px;
+            color: #f0a500;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .progress {
+            color: #aaa;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .current-question {
+            background: rgba(240, 165, 0, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            color: #f0a500;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .info {
+            background: rgba(83, 52, 131, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            border-left: 4px solid #533483;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Who Am I?</h1>
+        <div class="subtitle">28 Contemplative Questions</div>
+        
+        <div class="controls">
+            <button class="play-btn" onclick="startMeditation()">▶ Begin Meditation</button>
+            <button class="pause-btn" onclick="pauseMeditation()">⏸ Pause</button>
+            <button class="stop-btn" onclick="stopMeditation()">⏹ Stop</button>
+        </div>
+
+        <div class="controls">
+            <select id="voiceSelect" onchange="updateVoice()">
+                <option value="">Select Voice...</option>
+            </select>
+        </div>
+
+        <div class="slider-container">
+            <label for="rateSlider">Speed: <span id="rateValue">0.7</span>x</label>
+            <input type="range" id="rateSlider" min="0.5" max="1.5" step="0.1" value="0.7" 
+                   oninput="updateRate(this.value)">
+        </div>
+
+        <div class="slider-container">
+            <label for="pitchSlider">Pitch: <span id="pitchValue">0.8</span></label>
+            <input type="range" id="pitchSlider" min="0.5" max="1.5" step="0.1" value="0.8" 
+                   oninput="updatePitch(this.value)">
+        </div>
+
+        <div class="progress">
+            Question <span id="currentIndex">0</span> of <span id="totalQuestions">28</span>
+        </div>
+
+        <div class="current-question" id="currentQuestion">
+            Click "Begin Meditation" to start...
+        </div>
+
+        <div class="info">
+            <strong>Note:</strong> This uses your browser's built-in text-to-speech. 
+            For the best quality meditation audio with proper SSML support (including the 4-second pauses), 
+            use the Python script with Google Cloud TTS or Amazon Polly.
+            <br><br>
+            💡 <strong>Tip:</strong> Use headphones and find a quiet space. Let each question settle 
+            before moving to the next.
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            "Who am I?",
+            "If I am none of these, then who am I?",
+            "What is the nature of Awareness?",
+            "When will the realization of the Self be gained?",
+            "Will there not be realization of the Self even while the world is there, taken as real?",
+            "Why?",
+            "When will the world which is the object seen be removed?",
+            "What is the nature of the mind?",
+            "What is the path of inquiry for understanding the nature of the mind?",
+            "How will the mind become quiescent?",
+            "What is the means for constantly holding on to the thought, Who am I?",
+            "Are there no other means for making the mind quiescent?",
+            "The residual impressions, thoughts of objects, appear wending like the waves of an ocean. When will all of them get destroyed?",
+            "Is it possible for the residual impressions of objects that come from beginningless time, as it were, to be resolved, and for one to remain as the pure Self?",
+            "How long should inquiry be practised?",
+            "What is the nature of the Self?",
+            "Is not everything the work of God?",
+            "Of the devotees, who is the greatest?",
+            "What is non-attachment?",
+            "Is it not possible for God and the Guru to effect the release of a soul?",
+            "Is it necessary for one who longs for release to inquire into the nature of categories?",
+            "Is there no difference between waking and dream?",
+            "Is it any use reading books for those who long for release?",
+            "What is happiness?",
+            "What is wisdom-insight?",
+            "What is the relation between desirelessness and wisdom?",
+            "What is the difference between inquiry and meditation?",
+            "What is release?"
+        ];
+
+        let synth = window.speechSynthesis;
+        let currentQuestionIndex = 0;
+        let isPaused = false;
+        let utterance = null;
+        let voices = [];
+        let selectedVoice = null;
+        let rate = 0.7;
+        let pitch = 0.8;
+
+        // Load available voices
+        function loadVoices() {
+            voices = synth.getVoices();
+            const voiceSelect = document.getElementById('voiceSelect');
+            voiceSelect.innerHTML = '<option value="">Select Voice...</option>';
+            
+            // Filter for male voices (heuristic based on name)
+            const maleVoices = voices.filter(voice => 
+                voice.name.toLowerCase().includes('male') ||
+                voice.name.toLowerCase().includes('man') ||
+                voice.name.toLowerCase().includes('david') ||
+                voice.name.toLowerCase().includes('james') ||
+                voice.name.toLowerCase().includes('rishi') ||
+                voice.name.toLowerCase().includes('daniel')
+            );
+            
+            // Show all voices if no male-specific ones found
+            const displayVoices = maleVoices.length > 0 ? maleVoices : voices;
+            
+            displayVoices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.name.toLowerCase().includes('male') || 
+                    voice.name.toLowerCase().includes('david') ||
+                    voice.name.toLowerCase().includes('rishi')) {
+                    option.textContent += ' ⭐';
+                }
+                voiceSelect.appendChild(option);
+            });
+
+            // Auto-select a good male voice if available
+            const preferredVoice = displayVoices.find(v => 
+                v.name.toLowerCase().includes('rishi') || // Indian English
+                v.name.toLowerCase().includes('david') ||
+                v.name.toLowerCase().includes('male')
+            );
+            if (preferredVoice) {
+                const index = voices.indexOf(preferredVoice);
+                voiceSelect.value = index;
+                selectedVoice = preferredVoice;
+            }
+        }
+
+        // Load voices when available
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = loadVoices;
+        }
+        loadVoices();
+
+        function updateVoice() {
+            const voiceSelect = document.getElementById('voiceSelect');
+            if (voiceSelect.value) {
+                selectedVoice = voices[voiceSelect.value];
+            }
+        }
+
+        function updateRate(value) {
+            rate = parseFloat(value);
+            document.getElementById('rateValue').textContent = value;
+        }
+
+        function updatePitch(value) {
+            pitch = parseFloat(value);
+            document.getElementById('pitchValue').textContent = value;
+        }
+
+        function speakQuestion(index) {
+            if (index >= questions.length) {
+                // Meditation complete
+                document.getElementById('currentQuestion').textContent = 
+                    "Meditation complete. Rest in silence. 🕉️";
+                return;
+            }
+
+            currentQuestionIndex = index;
+            document.getElementById('currentIndex').textContent = index + 1;
+            document.getElementById('currentQuestion').textContent = questions[index];
+
+            utterance = new SpeechSynthesisUtterance(questions[index]);
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            utterance.onend = function() {
+                // 4 second pause before next question
+                if (!isPaused) {
+                    setTimeout(() => {
+                        if (!isPaused) {
+                            speakQuestion(index + 1);
+                        }
+                    }, 4000);
+                }
+            };
+
+            synth.speak(utterance);
+        }
+
+        function startMeditation() {
+            if (isPaused) {
+                isPaused = false;
+                synth.resume();
+            } else {
+                currentQuestionIndex = 0;
+                document.getElementById('totalQuestions').textContent = questions.length;
+                speakQuestion(0);
+            }
+        }
+
+        function pauseMeditation() {
+            isPaused = true;
+            synth.pause();
+        }
+
+        function stopMeditation() {
+            isPaused = false;
+            synth.cancel();
+            currentQuestionIndex = 0;
+            document.getElementById('currentQuestion').textContent = 
+                "Click \"Begin Meditation\" to start...";
+            document.getElementById('currentIndex').textContent = '0';
+        }
+
+        // Update total questions on load
+        document.getElementById('totalQuestions').textContent = questions.length;
+    </script>
+</body>
+</html>
